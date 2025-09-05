@@ -33,6 +33,7 @@ if('serviceWorker' in navigator){
       <button class="tab" data-tab="settings">Settings</button>
     </div>
 
+    <!-- Dashboard -->
     <section id="dashboard" class="tabcontent">
       <div class="row">
         <div class="card">
@@ -72,9 +73,19 @@ if('serviceWorker' in navigator){
       </div>
     </section>
 
+    <!-- Add Food -->
     <section id="food" class="tabcontent" style="display:none">
       <div class="card">
         <h3>Add Food</h3>
+
+        <div class="searchrow">
+          <input class="input" id="foodSearch" placeholder="Search preloaded & favorites (e.g., 'egg', 'rib-eye')">
+          <select class="input" id="foodPick">
+            <option value="">Pick from list…</option>
+          </select>
+          <button class="btn" id="applyPickBtn">Apply</button>
+        </div>
+
         <div class="grid">
           <div><label>Food name</label><input class="input" id="foodName" placeholder="e.g., 3 eggs"></div>
           <div><label>Meal time</label><input class="input" id="foodTime" type="time"></div>
@@ -83,15 +94,24 @@ if('serviceWorker' in navigator){
           <div><label>Carbs (g)</label><input class="input" id="foodC" type="number" step="0.1"></div>
           <div><label>Calories</label><input class="input" id="foodK" type="number" step="1"></div>
         </div>
-        <div style="margin-top:10px;display:flex;gap:8px">
+
+        <div class="flex" style="margin-top:10px">
           <button class="btn" id="addFoodBtn">Add</button>
+          <button class="btn" id="favAddBtn">★ Save to Favorites</button>
           <button class="btn" id="resetDayBtn">Reset Day</button>
         </div>
+
+        <div style="margin-top:10px">
+          <label>Favorites</label>
+          <div class="favbar" id="favBar"></div>
+        </div>
+
         <hr>
         <div class="list" id="foodList"></div>
       </div>
     </section>
 
+    <!-- Add Activity -->
     <section id="activity" class="tabcontent" style="display:none">
       <div class="card">
         <h3>Add Activity</h3>
@@ -124,6 +144,7 @@ if('serviceWorker' in navigator){
       </div>
     </section>
 
+    <!-- Body -->
     <section id="body" class="tabcontent" style="display:none">
       <div class="card">
         <h3>Weight & Body Metrics</h3>
@@ -138,6 +159,7 @@ if('serviceWorker' in navigator){
       </div>
     </section>
 
+    <!-- Notes -->
     <section id="notes" class="tabcontent" style="display:none">
       <div class="card">
         <h3>Daily Notes</h3>
@@ -146,6 +168,7 @@ if('serviceWorker' in navigator){
       </div>
     </section>
 
+    <!-- History -->
     <section id="history" class="tabcontent" style="display:none">
       <div class="card">
         <h3>History</h3>
@@ -153,6 +176,7 @@ if('serviceWorker' in navigator){
       </div>
     </section>
 
+    <!-- Settings -->
     <section id="settings" class="tabcontent" style="display:none">
       <div class="card">
         <h3>Settings</h3>

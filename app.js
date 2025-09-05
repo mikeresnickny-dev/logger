@@ -6,7 +6,91 @@ const store = {
   get(k, d){ try{ return JSON.parse(localStorage.getItem(k)) ?? d }catch(e){ return d } },
   set(k, v){ localStorage.setItem(k, JSON.stringify(v)) }
 };
+
+// Preloaded foods (name, P,F,C,K)
+const PRELOADED = [
+  // Proteins
+  ["Chicken breast (4 oz)", 26, 3, 0, 140],
+  ["Ground beef 85% lean (4 oz)", 22, 17, 0, 250],
+  ["Rib-eye steak (4 oz)", 23, 20, 0, 290],
+  ["NY strip steak (4 oz)", 25, 18, 0, 275],
+  ["Egg (1 large)", 6, 5, 0.5, 70],
+  ["Canned tuna, albacore (3 oz)", 20, 1, 0, 100],
+  // Fats
+  ["Olive oil (1 tbsp)", 0, 14, 0, 120],
+  ["Ghee (1 tbsp)", 0, 14, 0, 120],
+  ["Beef tallow (1 tbsp)", 0, 13, 0, 115],
+  ["Avocado (1 medium)", 3, 21, 12, 240],
+  ["Butter, grass-fed (1 tbsp)", 0, 12, 0, 100],
+  // Veggies
+  ["Bell pepper (1 medium)", 1, 0.2, 6, 25],
+  ["Broccoli (1 cup, cooked)", 4, 0.5, 11, 55],
+  ["Kimchi (1/2 cup)", 1, 0.5, 4, 15],
+  ["Sauerkraut (1/2 cup)", 1, 0, 2, 10],
+  ["Baby carrot (5 pcs)", 0.5, 0, 6, 25],
+  ["Baby cucumber (1 pc)", 0.3, 0.1, 1.5, 8],
+  // Fruit
+  ["Mango (1/2 cup)", 0.5, 0.5, 14, 70],
+  ["Cherries (1/2 cup)", 0.5, 0.3, 12, 60],
+  ["Blueberries (1/2 cup)", 0.5, 0.3, 10, 42],
+  ["Strawberries (1/2 cup)", 0.5, 0.2, 6, 25],
+  ["Peach (1 medium)", 1, 0.3, 15, 60],
+  ["Plum (1 medium)", 0.5, 0.2, 8, 35],
+  ["Pear (1 medium)", 1, 0.2, 26, 100],
+  ["Apple (1 medium)", 0.5, 0.3, 25, 95],
+  // Beverages
+  ["Coffee (black, 8 oz)", 0, 0, 0, 2],
+  ["Beef bone broth (1 cup)", 10, 3, 1, 50],
+];
+
 const defaults = { goals:{P:180,F:80,C:110,K:2000,fastingGoal:'16:00'}, heightIn:69 };
+
+function favoritesGet(){ return store.get('favorites', []); }
+function favoritesSet(arr){ store.set('favorites', arr); }
+function favoriteAdd(item){ const favs=favoritesGet(); if(!favs.find(f=>f.name===item.name)){ favs.push(item); favoritesSet(favs); } }
+function favoriteButtons(){
+  const bar = $('#favBar'); const favs=favoritesGet(); if(!bar) return;
+  bar.innerHTML = favs.map(f=>`<button class="fav" data-name="${f.name}">${f.name}</button>`).join('') || '<div class="small">No favorites yet — add one above.</div>';
+  bar.querySelectorAll('.fav').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const name = btn.getAttribute('data-name');
+      const f = favoritesGet().find(x=>x.name===name);
+      if(f){
+        $('#foodName').value = f.name;
+        $('#foodP').value = f.P;
+        $('#foodF').value = f.F;
+        $('#foodC').value = f.C;
+        $('#foodK').value = f.K;
+      }
+    });
+  });
+}
+
+function preloadedList(filter=""){
+  const select = $('#foodPick'); if(!select) return;
+  const q = (filter||'').toLowerCase();
+  const all = PRELOADED.concat(favoritesGet().map(f=>[f.name,f.P,f.F,f.C,f.K]));
+  const opts = all
+    .filter(row => row[0].toLowerCase().includes(q))
+    .map(row => `<option value="${row[0]}|${row[1]}|${row[2]}|${row[3]}|${row[4]}">${row[0]}</option>`)
+    .join('');
+  select.innerHTML = `<option value="">Pick from list…</option>` + opts;
+}
+
+function applyPick(){
+  const val = $('#foodPick').value;
+  if(!val) return;
+  const [name,P,F,C,K] = val.split('|');
+  $('#foodName').value = name;
+  $('#foodP').value = P;
+  $('#foodF').value = F;
+  $('#foodC').value = C;
+  $('#foodK').value = K;
+}
+
+function searchFoods(){
+  preloadedList($('#foodSearch').value);
+}
 
 function loadGoals(){ const g=store.get('goals',defaults.goals);
   $('#goalP').value=g.P; $('#goalF').value=g.F; $('#goalC').value=g.C; $('#goalK').value=g.K; $('#goalFast').value=g.fastingGoal||'16:00';
@@ -25,8 +109,20 @@ function addFood(){
   const K=+$('#foodK').value || Math.round(P*4 + C*4 + F*9);
   if(!name) return;
   const d=getDay(todayKey()); d.foods.push({name,time,P,F,C,K,ts:Date.now()}); setDay(todayKey(),d);
-  $('#foodName').value=''; $('#foodP').value=''; $('#foodF').value=''; $('#foodC').value=''; $('#foodK').value=''; render();
+  $('#foodName').value=''; $('#foodP').value=''; $('#foodF').value=''; $('#foodC').value=''; $('#foodK').value=''; $('#foodTime').value='';
+  render();
 }
+
+function favAddFromInputs(){
+  const name=$('#foodName').value.trim();
+  if(!name) return;
+  const P=+$('#foodP').value||0, F=+$('#foodF').value||0, C=+$('#foodC').value||0;
+  const K=+$('#foodK').value || Math.round(P*4 + C*4 + F*9);
+  favoriteAdd({name,P,F,C,K});
+  favoriteButtons();
+  preloadedList($('#foodSearch').value);
+}
+
 function resetDay(){ if(!confirm("Reset today's entries?")) return;
   setDay(todayKey(), {foods:[],activities:[],notes:'',body:{},cached:{}}); render();
 }
@@ -73,15 +169,18 @@ function renderDashboard(){
   $('#lastMeals').textContent=`Last meal yesterday: ${lastY||'—'} • First meal today: ${firstT||'—'}`;
 }
 
-function renderFood(){ const d=getDay(todayKey());
+function renderFood(){
+  const d=getDay(todayKey());
   $('#foodList').innerHTML = d.foods.map(f=>`<div class="item"><div>${f.time||'--:--'} • ${f.name}</div><div class="small">${f.P}P / ${f.F}F / ${f.C}C • ${f.K} kcal</div></div>`).join('')
     || '<div class="small">No foods yet. Add your first meal above.</div>';
 }
-function renderActivity(){ const d=getDay(todayKey());
+function renderActivity(){
+  const d=getDay(todayKey());
   $('#actList').innerHTML = d.activities.map(a=>`<div class="item"><div>${a.type}</div><div class="small">${a.minutes} min • Int ${a.intensity}</div></div>`).join('')
     || '<div class="small">No activities yet.</div>';
 }
-function renderBody(){ const d=getDay(todayKey());
+function renderBody(){
+  const d=getDay(todayKey());
   $('#wWeight').value=d.body?.weight||''; $('#wBF').value=d.body?.bf||''; $('#wSM').value=d.body?.sm||'';
   $('#wHeight').value=d.body?.heightIn || store.get('heightIn',defaults.heightIn);
   const hIn=d.body?.heightIn || store.get('heightIn',defaults.heightIn), hM=hIn*0.0254;
@@ -108,15 +207,19 @@ function renderHistory(){
 function renderHelp(){
   const help=`LOGGER QUICK START
 
+ADD FOOD – 3 WAYS
+1) Type in name + P/F/C/K (+ meal time) and tap Add.
+2) Pick from preloaded list (or Favorites) and tap Apply to auto-fill.
+3) Tap a Favorite chip to auto-fill instantly. Use ★ Save to add your own.
+
+FAVORITES
+• After entering a food, tap ★ Save to Favorites.
+• Favorites are local to your device and appear as quick-add chips.
+
 DASHBOARD
 • See today's macros, weight, body comp, activity, and notes at a glance.
 • Fasting shows time between last meal yesterday and first meal today.
 • Progress bar compares fasting duration to your daily goal (default 16:00).
-
-ADD FOOD
-• Enter food name, P/F/C/K, and meal time.
-• Calories auto-calc if left blank.
-• Entries update totals instantly.
 
 ACTIVITY
 • Log type, minutes, and intensity (1 easy, 2 moderate, 3 hard).
@@ -136,13 +239,19 @@ SETTINGS
 • Set daily macro goals and fasting goal (default 16:00).`;
   $('#helpContent').textContent=help;
 }
-function render(){ renderDashboard(); renderFood(); renderActivity(); renderBody(); renderNotes(); renderHistory(); renderHelp(); }
+function render(){
+  favoriteButtons();
+  preloadedList($('#foodSearch')?.value||"");
+  renderDashboard(); renderFood(); renderActivity(); renderBody(); renderNotes(); renderHistory(); renderHelp();
+}
+
 function initTabs(){ $$('.tab').forEach(b=>{ b.addEventListener('click',()=>{
   $$('.tab').forEach(x=>x.classList.remove('active')); b.classList.add('active');
   $$('.tabcontent').forEach(s=>s.style.display='none'); $('#'+b.dataset.tab).style.display='block'; render();
 });}); }
 function initEvents(){
   $('#addFoodBtn').addEventListener('click', addFood);
+  $('#favAddBtn').addEventListener('click', favAddFromInputs);
   $('#resetDayBtn').addEventListener('click', resetDay);
   $('#addActBtn').addEventListener('click', addActivity);
   $('#saveBodyBtn').addEventListener('click', saveBody);
@@ -153,8 +262,11 @@ function initEvents(){
     document.querySelector('.tab[data-tab="settings"]').classList.add('active');
     $$('.tabcontent').forEach(s=>s.style.display='none'); $('#settings').style.display='block';
   });
+  $('#applyPickBtn').addEventListener('click', applyPick);
+  $('#foodSearch').addEventListener('input', searchFoods);
 }
 function firstRun(){ if(!localStorage.getItem('goals')) store.set('goals',defaults.goals);
   if(!localStorage.getItem('heightIn')) store.set('heightIn',defaults.heightIn);
+  if(!localStorage.getItem('favorites')) store.set('favorites', []);
 }
 firstRun(); initTabs(); initEvents(); loadGoals(); render();
